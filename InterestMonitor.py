@@ -1,4 +1,5 @@
 from tkinter import *
+import winsound
 import cv2
 import numpy as np
 from PIL import ImageGrab
@@ -31,10 +32,32 @@ def init(data):
     data.color = (0,0,0)
     data.change = [False for _ in range(50)]
     data.locked = False
+    data.circleSize = min(data.width,data.height) / 10
+    data.circleX = data.width/2
+    data.circleY = data.height/2
+    data.charText = ""
+    data.keysymText = ""
+    data.Toggle = ImageTk.PhotoImage(Image.open("Toggle.png"))
+    data.On = ImageTk.PhotoImage(Image.open("NewOn.png"))
+    data.Off = ImageTk.PhotoImage(Image.open("NewOff.png"))
+    data.isClass = False
+    data.togX = 27
+    data.togY = 25
+    data.needChange = False
+    data.frequency = 440  # Set Frequency To 2500 Hertz
+    data.duration = 1000  # Set Duration To 1000 ms == 1 second
 
 def mousePressed(event, data):
     # use event.x and event.y
-    pass
+    if (not(data.needChange) or data.facesRead == True):
+        if(event.x >= 27 and event.x <= 86 and event.y >= 25 and event.y <=61):
+            if (data.facesRead):
+                data.facesRead = False
+                data.needChange = True
+            else:
+                data.facesRead = True
+
+                data.needChange = True
 
 def keyPressed(event, data):
     # use event.char and event.keysym
@@ -47,7 +70,7 @@ def timerFired(data):
     data.screen_np = np.array(data.screen)
     data.frame = data.screen_np
 
-    data.frame = cv2.resize(data.frame, (683, 384))
+    data.frame = cv2.resize(data.frame, (int(1366*3/4), int(768*3/4)))
 
     if(data.facesRead == True):
         if(data.locked == False):
@@ -80,29 +103,58 @@ def timerFired(data):
     data.frameTk = ImageTk.PhotoImage(image = data.frameTk)
 
 def timerAttention(data):
-    for i in range(len(data.fail)):
-        if(data.fail[i] == True):
-            try:
-                data.timerCount[i] += 1
-            except:
-                break
+    if(data.facesRead == True):
+        for i in range(len(data.fail)):
+            if(data.fail[i] == True):
+                try:
+                    data.timerCount[i] += 1
+                except:
+                    break
 
-    for i in range(len(data.timerCount)):
-        if(data.fail[i] == True and data.timerCount[i] >= 50):
-            data.error[i] = True
-            data.errorCoords[i] = data.faces[i]
+        for i in range(len(data.timerCount)):
+            if(data.fail[i] == True and data.timerCount[i] >= 50):
+                winsound.Beep(data.frequency, data.duration)
+                data.error[i] = True
+                data.errorCoords[i] = data.faces[i]
 
 def redrawAll(canvas, data):
     # draw in canvas
     canvas.create_image(0, 0, anchor=NW, image=data.frameTk)
 
-    for i in range(len(data.errorCoords)):
+    if(data.facesRead == True):
+        for i in range(len(data.errorCoords)):
+            if(data.error[i] == True):
+                canvas.create_rectangle(data.errorCoords[i][0], data.errorCoords[i][1], data.errorCoords[i][0] + data.errorCoords[i][2], data.errorCoords[i][1] + data.errorCoords[i][3], outline = "red", width = 5)
+                cv2.putText(data.frame, "Not Paying Attention", (data.faces[i][0], data.faces[i][1] - 5), cv2.FONT_HERSHEY_COMPLEX_SMALL, 1, data.errorColor, 2, cv2.LINE_AA)
 
-        if(data.error[i] == True):
-            canvas.create_rectangle(data.errorCoords[i][0], data.errorCoords[i][1], data.errorCoords[i][0] + data.errorCoords[i][2], data.errorCoords[i][1] + data.errorCoords[i][3], outline = "red", width = 5)
-            data.change[i] = True
-        else:
-            break
+                data.change[i] = True
+            else:
+                break
+
+    if (data.facesRead):
+        canvas.create_image(27, 25, anchor=NW, image=data.On)
+    else:
+        canvas.create_image(27, 25, anchor=NW, image=data.Off)
+
+    if (data.needChange):
+        if (data.togX == 47):
+            data.togX = 50
+            data.needChange = False
+        if (data.togX == 42):
+            data.togX = 47
+        if (data.togX == 27):
+            data.togX = 42
+
+        if (data.needChange):
+            if (data.togX == 30):
+                data.togX = 27
+                data.needChange = False
+            if (data.togX == 35):
+                data.togX = 30
+            if (data.togX == 50):
+                data.togX = 35
+
+    canvas.create_image(data.togX, data.togY, anchor=NW, image=data.Toggle)
 
 ####################################
 # use the run function as-is
@@ -153,4 +205,4 @@ def run(width=300, height=300):
     root.mainloop()  # blocks until window is closed
     print("bye!")
 
-run(683, 384)
+run(int(1366*3/4), int(768*3/4))
