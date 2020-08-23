@@ -49,10 +49,16 @@ def init(data):
 
 def mousePressed(event, data):
     # use event.x and event.y
-    if (not(data.needChange) or data.facesRead == True):
+    if (not(data.needChange)):
         if(event.x >= 27 and event.x <= 86 and event.y >= 25 and event.y <=61):
             if (data.facesRead):
                 data.facesRead = False
+                data.fail = [False for _ in range(50)]
+                data.timerCount = [0 for _ in range(50)]
+                data.eyeCount = [0 for _ in range(50)]
+                data.errorCoords = [None for _ in range(50)]
+                data.errorColor = (255,0,0)
+                data.change = [False for _ in range(50)]
                 data.needChange = True
             else:
                 data.facesRead = True
@@ -112,7 +118,7 @@ def timerAttention(data):
                     break
 
         for i in range(len(data.timerCount)):
-            if(data.fail[i] == True and data.timerCount[i] >= 50):
+            if(data.fail[i] == True and data.timerCount[i] >= 2):
                 winsound.Beep(data.frequency, data.duration)
                 data.error[i] = True
                 data.errorCoords[i] = data.faces[i]
@@ -124,10 +130,13 @@ def redrawAll(canvas, data):
     if(data.facesRead == True):
         for i in range(len(data.errorCoords)):
             if(data.error[i] == True):
-                canvas.create_rectangle(data.errorCoords[i][0], data.errorCoords[i][1], data.errorCoords[i][0] + data.errorCoords[i][2], data.errorCoords[i][1] + data.errorCoords[i][3], outline = "red", width = 5)
-                cv2.putText(data.frame, "Not Paying Attention", (data.faces[i][0], data.faces[i][1] - 5), cv2.FONT_HERSHEY_COMPLEX_SMALL, 1, data.errorColor, 2, cv2.LINE_AA)
+                try:
+                    canvas.create_rectangle(data.errorCoords[i][0], data.errorCoords[i][1], data.errorCoords[i][0] + data.errorCoords[i][2], data.errorCoords[i][1] + data.errorCoords[i][3], outline = "red", width = 5)
+                    cv2.putText(data.frame, "Not Paying Attention", (data.faces[i][0], data.faces[i][1] - 5), cv2.FONT_HERSHEY_COMPLEX_SMALL, 1, data.errorColor, 2, cv2.LINE_AA)
 
-                data.change[i] = True
+                    data.change[i] = True
+                except:
+                    break
             else:
                 break
 
